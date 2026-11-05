@@ -1,0 +1,22 @@
+# секреты
+.env
+credentials.json
+token.json
+client_secret*.json
+
+# личные данные (письма, компании, резюме)
+data/
+job_search.xlsx
+*.pdf
+cv_v2.md
+build_cv.py
+tier_overrides.json
+
+# сборка и окружение
+.venv/
+Job Tracker.app/
+dist/
+__pycache__/
+*.pyc
+*.log
+.DS_Store

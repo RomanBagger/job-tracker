@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Tracker</title>
+<style>
+:root{
+  --bg:#f6f7f9; --card:#fff; --text:#1b2330; --muted:#6b7686; --line:#e6e9ee; --accent:#0e7c86; --accent-ink:#fff;
+  --S:#f6d55c; --A:#9bdc95; --B:#bcdcf7; --C:#e3e5e8; --D:#f2b3b3; --tierink:#1b2330;
+  --ok:#2f8f4e; --bad:#c0392b; --warn:#b7791f;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#14181f; --card:#1c222b; --text:#e8ecf1; --muted:#93a0b2; --line:#2a323d; --accent:#2bb3bf; --accent-ink:#0b1417;
+    --S:#a88a1f; --A:#3f7d3a; --B:#2f5f8a; --C:#3a424d; --D:#8a3a3a; --tierink:#fff; --ok:#5cc47e; --bad:#ef7b6e; --warn:#e0b25a; }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:14px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+h1{font-size:18px;margin:0;font-weight:650}
+.sub{color:var(--muted);font-size:12px}
+.spacer{flex:1}
+button{font:inherit;border:1px solid var(--line);background:var(--card);color:var(--text);padding:8px 14px;border-radius:9px;cursor:pointer;font-weight:550}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+main{padding:20px 24px 60px;max-width:1280px;margin:0 auto}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.card b{display:block;font-size:24px;font-weight:650;line-height:1.1}
+.card span{color:var(--muted);font-size:12px}
+.banner{background:var(--card);border:1px solid var(--warn);border-radius:12px;padding:12px 16px;margin-bottom:16px}
+.banner ul{margin:6px 0 0;padding-left:18px}
+.tools{display:flex;gap:10px;margin:6px 0 14px;flex-wrap:wrap}
+input,select{font:inherit;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text)}
+input{min-width:240px}
+h2{font-size:14px;margin:22px 0 8px;display:flex;gap:8px;align-items:center}
+h2 small{color:var(--muted);font-weight:500}
+.tablewrap{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:auto}
+table{border-collapse:collapse;width:100%;min-width:860px}
+th,td{padding:9px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.co{font-weight:600}
+td.role,td.why{color:var(--muted)}
+td.role>div{max-width:240px}
+td.why>div{max-width:320px}
+td.role>div,td.why>div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr.open td.role>div,tr.open td.why>div{white-space:normal;overflow:visible}
+tr:has(td){cursor:pointer}
+tr:has(td):hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.chev{display:inline-block;color:var(--muted);transition:transform .15s;margin-right:4px;font-size:10px}
+tr.open .chev{transform:rotate(90deg)}
+.tier{display:inline-block;width:26px;text-align:center;border-radius:7px;font-weight:700;color:var(--tierink);padding:2px 0}
+.tier.S{background:var(--S)}.tier.A{background:var(--A)}.tier.B{background:var(--B)}.tier.C{background:var(--C)}.tier.D{background:var(--D)}
+.pill{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:550;border:1px solid var(--line);white-space:nowrap}
+.pill.go{color:var(--ok);border-color:var(--ok)} .pill.no{color:var(--bad);border-color:var(--bad)}
+.pill.wait{color:var(--warn);border-color:var(--warn)}
+.closed td{color:var(--muted)}
+.closed td.co{color:var(--text)}
+.chg{color:var(--bad);font-weight:600}
+.empty{padding:22px;color:var(--muted);text-align:center}
+#log{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:10px 24px;display:none;max-height:34vh;overflow:auto;font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}
+#log.show{display:block}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--muted);margin-right:6px}
+.dot.run{background:var(--accent);animation:p 1s infinite}
+@keyframes p{50%{opacity:.25}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Job Tracker</h1>
+    <div class="sub" id="sync">—</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="sub" id="state"></span>
+  <button class="primary" id="b-sync" onclick="run('sync')">Обновить таблицу (почта)</button>
+  <button id="b-rerate" title="Переоценивает ВСЕ компании через Claude + веб-поиск: несколько минут и расход на API" onclick="run('rerate')">Обновить рейтинг компаний</button>
+  <button onclick="openXlsx()">Открыть Excel</button>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div class="cards" id="cards"></div>
+  <div class="tools">
+    <input id="q" placeholder="Поиск по компании или роли" oninput="render()">
+    <select id="tier" onchange="render()">
+      <option value="">Все тиры</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option>
+    </select>
+  </div>
+  <h2>В процессе <small id="n-active"></small></h2>
+  <div class="tablewrap"><table id="t-active"></table></div>
+  <h2>Закрытые: отказы и офферы <small id="n-closed"></small></h2>
+  <div class="tablewrap"><table id="t-closed" class="closed"></table></div>
+</main>
+<div id="log"></div>
+
+<script>
+let DATA = null, polling = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function load(){
+  DATA = await (await fetch("/api/data")).json();
+  $("sync").textContent = DATA.last_sync ? "Последняя синхронизация: " + new Date(DATA.last_sync).toLocaleString("ru-RU") : "Синхронизации ещё не было";
+  const s = DATA.setup, miss = [];
+  if(!s.credentials) miss.push("Нет <b>credentials.json</b> (доступ к Gmail). См. инструкцию SETUP_GOOGLE.md");
+  if(!s.api_key) miss.push("Нет <b>ANTHROPIC_API_KEY</b> в файле .env");
+  if(s.credentials && !s.token) miss.push("Первый запуск: при нажатии «Обновить таблицу» откроется окно Google для входа");
+  $("banner").innerHTML = miss.length ? '<div class="banner"><b>Нужна настройка</b><ul>' + miss.map(m => "<li>" + m + "</li>").join("") + "</ul></div>" : "";
+  render();
+}
+
+function statusPill(s){
+  const cls = s === "Offer" ? "go" : s.startsWith("Отказ") ? "no" : (s === "В процессе" ? "go" : "wait");
+  return `<span class="pill ${cls}">${esc(s)}</span>`;
+}
+
+function rowHtml(r){
+  return `<tr onclick="this.classList.toggle('open')"><td class="co"><span class="chev">▶</span>${esc(r.company)}</td>
+    <td><span class="tier ${esc(r.tier)}" title="${esc(r.rationale)}">${esc(r.tier)}</span> ${r.change ? `<span class="chg">${esc(r.change)}</span>` : ""}</td>
+    <td>${esc(r.category)}</td><td class="role"><div title="${esc(r.role)}">${esc(r.role)}</div></td>
+    <td>${esc(r.stage)}</td><td>${statusPill(r.status)}</td><td>${esc(r.last)}</td><td class="why"><div title="${esc(r.rationale)}">${esc(r.rationale)}</div></td></tr>`;
+}
+
+const HEAD = "<tr><th>Компания</th><th>Тир</th><th>Тип</th><th>Роль</th><th>Дошёл до</th><th>Статус</th><th>Последнее</th><th>Почему такой тир</th></tr>";
+
+function render(){
+  if(!DATA) return;
+  const q = $("q").value.toLowerCase(), t = $("tier").value;
+  const ok = r => (!t || r.tier === t) && (!q || (r.company + " " + r.role).toLowerCase().includes(q));
+  const rows = DATA.rows.filter(ok);
+  const order = {"В процессе":0, "Рекрутер написал":1, "Нет ответа":2};
+  const tr = {S:0,A:1,B:2,C:3,D:4};
+  const cmp = (a,b) => (order[a.status] ?? 9) - (order[b.status] ?? 9) || (tr[a.tier] ?? 9) - (tr[b.tier] ?? 9) || a.company.localeCompare(b.company);
+  const act = rows.filter(r => !r.closed).sort(cmp);
+  const done = rows.filter(r => r.closed).sort((a,b) => (a.status !== "Offer") - (b.status !== "Offer") || (tr[a.tier] ?? 9) - (tr[b.tier] ?? 9) || a.company.localeCompare(b.company));
+  $("t-active").innerHTML = act.length ? HEAD + act.map(rowHtml).join("") : '<tr><td class="empty">Ничего не найдено</td></tr>';
+  $("t-closed").innerHTML = done.length ? HEAD + done.map(rowHtml).join("") : '<tr><td class="empty">Ничего не найдено</td></tr>';
+  $("n-active").textContent = act.length; $("n-closed").textContent = done.length;
+
+  const all = DATA.rows, c = f => all.filter(f).length;
+  const cards = [
+    ["Компаний", all.length], ["В процессе", c(r => r.status === "В процессе")],
+    ["Дошли до HR+", c(r => r.reached >= 2)], ["Дошли до Tech+", c(r => r.reached >= 3)],
+    ["Отказов", c(r => r.status.startsWith("Отказ"))], ["Офферов", c(r => r.status === "Offer")],
+  ];
+  $("cards").innerHTML = cards.map(([k,v]) => `<div class="card"><b>${v}</b><span>${k}</span></div>`).join("");
+}
+
+async function run(task){
+  const r = await (await fetch("/api/run/" + task, {method:"POST", headers:{"X-JT":"1"}})).json();
+  if(r.started) poll();
+}
+async function openXlsx(){ await fetch("/api/open-xlsx", {method:"POST", headers:{"X-JT":"1"}}); }
+
+async function poll(){
+  clearInterval(polling);
+  const tick = async () => {
+    const s = await (await fetch("/api/status")).json();
+    const log = $("log");
+    log.classList.toggle("show", s.log.length > 0);
+    log.textContent = s.log.join("\n"); log.scrollTop = log.scrollHeight;
+    for (const id of ["b-sync","b-rerate"]) $(id).disabled = !!s.running;
+    $("state").innerHTML = s.running ? '<span class="dot run"></span>Выполняется…' :
+      (s.code === null ? "" : s.code === 0 ? "Готово" : "Ошибка, см. лог ниже");
+    if(!s.running){ clearInterval(polling); load(); }
+  };
+  polling = setInterval(tick, 1200); tick();
+}
+load(); poll();
+</script>
+</body>
+</html>
