@@ -1,90 +1,94 @@
 # Job Tracker
 
-Приложение для Mac: читает вашу Gmail-почту, находит письма о вакансиях (DevOps / Platform / SRE и любые другие),
-определяет компанию и этап (отклик → HR → Tech → Final → отказ / оффер), ставит каждой компании рейтинг S–D
-и показывает всё в окне приложения и в файле `job_search.xlsx`.
+A Mac app that reads your Gmail, finds job-search emails (DevOps / Platform / SRE or any other role), and works out the
+company and the stage (applied → HR → Tech → Final → rejected / offer). It rates every company on an S–D scale and shows
+everything in a desktop window and in a `job_search.xlsx` spreadsheet.
 
-Всё хранится у вас на компьютере. Почта только читается (права `gmail.readonly`).
+Everything stays on your computer. Your mailbox is **read-only** (`gmail.readonly` scope).
 
 ---
 
-## Для человека: установка за 15 минут
+## For humans: install in about 15 minutes
 
-### Что понадобится
-| Что | Зачем | Цена |
+### What you need
+| What | Why | Cost |
 |---|---|---|
-| Mac | приложение собирается под macOS | — |
-| Python 3 | запуск (проверьте в Терминале: `python3 --version`; нет — установите с python.org) | бесплатно |
-| Gmail-аккаунт | откуда читать письма | бесплатно |
-| Google Cloud | разрешение на чтение почты (один раз) | бесплатно |
-| Ключ Anthropic (Claude API) | разбор писем и рейтинг компаний | платно, хватит $5–10 |
+| A Mac | the app is built for macOS | n/a |
+| Python 3.10+ | to run the code (check in Terminal: `python3 --version`; if missing, install from python.org) | free |
+| A Gmail account | the mailbox to read | free |
+| Google Cloud | one-time permission to read your mail | free |
+| An Anthropic (Claude) API key | parses emails and rates companies | paid, $5–10 is plenty |
 
-### Шаги
-**1. Скачайте и соберите**
+### Steps
+**1. Download and build**
 ```
 git clone https://github.com/RomanBagger/job-tracker.git
 cd job-tracker
 ./build_app.sh
 ```
-Появится приложение **Job Tracker.app**.
+This creates **Job Tracker.app**.
 
-**2. Ключ Anthropic**
-1. <https://console.anthropic.com> → Billing → пополните на $5–10.
-2. Settings → API Keys → Create Key → скопируйте ключ (`sk-ant-...`).
-3. В папке проекта выполните `cp .env.example .env` и вставьте ключ в `.env`.
+**2. Anthropic API key**
+1. Go to <https://console.anthropic.com> → Billing → add $5–10.
+2. Settings → API Keys → Create Key → copy the key (`sk-ant-...`).
+3. In the project folder run `cp .env.example .env` and paste the key into `.env`.
 
-**3. Доступ к Gmail (Google Cloud)** — подробно с пояснениями: **[SETUP_GOOGLE.md](SETUP_GOOGLE.md)**. Коротко:
-1. <https://console.cloud.google.com> → создайте проект → включите **Gmail API**.
-2. OAuth consent screen: тип External, добавьте **свой Gmail в Test users**, затем нажмите **Publish app**.
-3. Credentials → Create credentials → OAuth client ID → **Desktop app** → скачайте JSON.
-4. Положите файл в папку проекта под именем **`credentials.json`**.
+**3. Gmail access (Google Cloud)**: full walkthrough in **[SETUP_GOOGLE.md](SETUP_GOOGLE.md)**. In short:
+1. <https://console.cloud.google.com> → create a project → enable **Gmail API**.
+2. OAuth consent screen: type External, add **your own Gmail under Test users**, then click **Publish app**.
+3. Credentials → Create credentials → OAuth client ID → **Desktop app** → download the JSON.
+4. Save it in the project folder as **`credentials.json`**.
 
-**4. Запуск**
-Откройте **Job Tracker.app** (можно перетащить в Dock) → нажмите **«Обновить таблицу (почта)»**.
-Откроется браузер с входом в Google. Если появится «Google hasn't verified this app» — **Advanced → Go to job-tracker (unsafe)** и разрешите доступ.
-Подождите: первый проход по почте занимает несколько минут.
+**4. Run it**
+Open **Job Tracker.app** (drag it to the Dock if you like) and click **Update table** (the button is labelled
+«Обновить таблицу (почта)»). A browser window opens for Google sign-in. If you see "Google hasn't verified this app",
+choose **Advanced → Go to job-tracker (unsafe)** and allow access. The first pass over your mailbox takes a few minutes.
 
-### Кнопки
-- **Обновить таблицу (почта)** — читает новые письма, обновляет таблицу.
-- **Обновить рейтинг компаний** — переоценивает все компании (долго и платно).
-- **Открыть Excel** — открывает `job_search.xlsx`.
+### Buttons
+- **Update table** («Обновить таблицу (почта)»): reads new emails and refreshes the table.
+- **Update company ratings** («Обновить рейтинг компаний»): re-rates every company. Slow and costs API credits.
+- **Open Excel** («Открыть Excel»): opens `job_search.xlsx`.
 
-### Если что-то не работает
-| Симптом | Решение |
+> The app interface and the status names in the table are currently in Russian.
+
+### Troubleshooting
+| Symptom | Fix |
 |---|---|
-| `403 access_denied` при входе в Google | Ваш email не добавлен в **Test users** или приложение не опубликовано (шаг 3.2) |
-| Просит войти каждую неделю | Не нажали **Publish app**; после публикации удалите `token.json` и войдите заново |
-| `credentials.json not found` | Файл не в корне проекта или называется `client_secret_….json` — переименуйте |
-| Ошибка Anthropic 401 / credit | Проверьте ключ в `.env` и баланс |
+| `403 access_denied` when signing in to Google | Your email is not under **Test users**, or the app is not published (step 3.2) |
+| Asks you to sign in again every week | You did not click **Publish app**. After publishing, delete `token.json` and sign in again |
+| `credentials.json` not found | The file is not in the project root, or is still named `client_secret_….json`: rename it |
+| Anthropic error 401 / credit balance | Check the key in `.env` and your balance |
 
-Автозапуск по расписанию и ручные оценки компаний — внизу, в разделе «Дополнительно».
-
----
-
-## Для агента (Claude Code)
-
-Человек скачал репозиторий и хочет установить приложение с вашей помощью. Скажите ему вставить в Claude Code:
-
-> Склонируй https://github.com/RomanBagger/job-tracker, прочитай CLAUDE.md и помоги мне установить приложение по шагам.
-
-Инструкция для агента лежит в **[CLAUDE.md](CLAUDE.md)**: что проверить, что сделать самому, а что только пользователь может сделать в браузере.
+Scheduling and manual company ratings are described at the bottom under "Advanced".
 
 ---
 
-## Дополнительно
+## For agents (Claude Code)
 
-**Автозапуск (cron)**, `crontab -e`:
+A person has downloaded this repository and wants help installing the app. Tell them to paste this into Claude Code:
+
+> Clone https://github.com/RomanBagger/job-tracker, read CLAUDE.md and help me install the app step by step.
+
+The agent runbook is in **[CLAUDE.md](CLAUDE.md)**: what to check, what the agent can do itself, and what only the user
+can do in a browser.
+
+---
+
+## Advanced
+
+**Scheduling (cron)**, via `crontab -e`:
 ```
-0 8 * * 1  /путь/к/job-tracker/run.sh            # письма — по понедельникам
-0 9 1 * *  /путь/к/job-tracker/run.sh --rerate   # рейтинг компаний старше 30 дней — 1-го числа
+0 8 * * 1  /path/to/job-tracker/run.sh            # emails: every Monday
+0 9 1 * *  /path/to/job-tracker/run.sh --rerate   # ratings older than 30 days: 1st of the month
 ```
-Лог: `data/sync.log`. Mac должен быть включён.
+Log: `data/sync.log`. The Mac must be awake at that time.
 
-**Ручные оценки компаний** — файл `tier_overrides.json`:
-`{"Google": {"tier": "S", "category": "product", "rationale": "..."}}`. Такие компании не переоцениваются автоматически.
+**Manual company ratings** go in `tier_overrides.json`:
+`{"Google": {"tier": "S", "category": "product", "rationale": "..."}}`. Such companies are never re-rated automatically.
 
-**Настройки** в `.env`: `BACKFILL_MONTHS` (за сколько месяцев читать почту при первом запуске, по умолчанию 24; для пробы поставьте 3).
+**Settings** in `.env`: `BACKFILL_MONTHS` is how many months of mail to read on the first run (default 24; use 3 for a test).
 
-**Как устроено:** `jobtracker/gmail.py` (чтение Gmail) → `classify.py` (разбор писем Claude Haiku) → `tiers.py` (рейтинг Claude Sonnet + веб-поиск) → SQLite `data/jobs.db` → `report.py` (xlsx) · `app.py` + `ui.html` (окно).
+**How it works:** `jobtracker/gmail.py` (reads Gmail) → `classify.py` (Claude Haiku parses emails) → `tiers.py`
+(Claude Sonnet + web search rates companies) → SQLite `data/jobs.db` → `report.py` (xlsx) · `app.py` + `ui.html` (window).
 
-**Что не публикуется (в `.gitignore`):** `.env`, `credentials.json`, `token.json`, `data/`, `job_search.xlsx`.
+**Never published (in `.gitignore`):** `.env`, `credentials.json`, `token.json`, `data/`, `job_search.xlsx`.

@@ -1,45 +1,48 @@
-# Инструкция для агента: установка Job Tracker
+# Agent runbook: installing Job Tracker
 
-Ты помогаешь человеку установить это приложение на его Mac. Веди по шагам, по одному, проверяй результат командами.
-Говори с пользователем простым языком, на языке, на котором он пишет. Не проси присылать ключи и токены в чат.
+You are helping a person install this app on their Mac. Go one step at a time and verify each result with commands.
+Use plain language and reply in the language the user writes in. Never ask the user to paste keys or tokens into the chat.
 
-## Что ты делаешь сам, а что только пользователь
-- **Сам:** проверки (`python3 --version`), `./build_app.sh`, создание `.env` из `.env.example`, перенос `credentials.json` из Загрузок, проверка наличия файлов, запуск и диагностика по логам.
-- **Только пользователь** (в браузере): создать проект в Google Cloud, нажать кнопки согласия, войти в Google, купить кредиты и создать ключ Anthropic.
-  Для этих шагов дай ссылку и 2–3 понятных действия, дождись «сделал».
+## What you do vs. what only the user can do
+- **You:** checks (`python3 --version`), `./build_app.sh`, creating `.env` from `.env.example`, moving `credentials.json` out of
+  Downloads, checking that files exist, running the app and diagnosing from logs.
+- **Only the user** (in a browser): create the Google Cloud project, click the consent buttons, sign in to Google, add credit
+  and create the Anthropic key. For these, give the link and 2–3 clear actions, then wait for "done".
 
-## Порядок
-1. **Проверка среды.** macOS (`uname`), `python3 --version` (нужен 3.10+). Если нет Python — предложи `brew install python` или python.org.
-2. **Сборка.** В корне репозитория: `./build_app.sh`. Должна появиться `Job Tracker.app`. При ошибке прочитай вывод и почини.
-3. **Ключ Anthropic.** Попроси создать ключ в <https://console.anthropic.com> (нужен баланс $5–10). Затем создай `.env` из `.env.example`;
-   пользователь вставляет ключ в файл сам (открой файл в редакторе: `open -e .env`). Не печатай ключ в ответах. Проверка без вывода значения:
-   `awk -F= '/^ANTHROPIC_API_KEY/{print "длина ключа:", length($2)}' .env` (ожидается > 50).
-4. **Google Cloud.** Проведи по `SETUP_GOOGLE.md`. Критичные моменты, на которых люди ошибаются:
-   - Включить именно **Gmail API**.
-   - **Свой email добавить в Test users** (иначе `403 access_denied`).
-   - Нажать **Publish app** (иначе токен умирает через 7 дней).
-   - Тип OAuth client — **Desktop app**.
-   - Скачанный `client_secret_….json` положить в корень репозитория как `credentials.json`:
-     `mv ~/Downloads/client_secret_*.json ./credentials.json` (проверь, что файл один и содержит ключ `installed`).
-5. **Первый запуск.** Лучше с пробой: в `.env` поставить `BACKFILL_MONTHS=3`. Открыть `Job Tracker.app` и нажать «Обновить таблицу (почта)»;
-   пользователь проходит вход в браузере (предупреждение «not verified» → Advanced → Go to job-tracker). Либо из терминала:
-   `.venv/bin/python -m jobtracker.sync` (может работать десятки минут, запусти в фоне и следи за выводом).
-6. **Проверка результата.** Появился `token.json`, `data/jobs.db`, `job_search.xlsx`. Посмотри распределение статусов
-   (`sqlite3 data/jobs.db "select event,count(*) from emails where is_job=1 group by 1"`) и покажи пользователю.
-   Если компания названа неверно или письмо не про найм — это правится промптом в `jobtracker/classify.py`.
-7. **Расписание (по желанию).** Предложи cron из README, спроси разрешение перед правкой `crontab`, сохрани копию старого crontab.
+## Order
+1. **Environment.** macOS (`uname`), `python3 --version` (3.10+ needed). If Python is missing, suggest `brew install python` or python.org.
+2. **Build.** In the repo root run `./build_app.sh`. `Job Tracker.app` should appear. On failure, read the output and fix it.
+3. **Anthropic key.** Ask the user to create a key at <https://console.anthropic.com> (needs $5–10 credit). Create `.env` from
+   `.env.example`; the user pastes the key into the file themselves (open it with `open -e .env`). Do not print the key.
+   Check without showing the value: `awk -F= '/^ANTHROPIC_API_KEY/{print "key length:", length($2)}' .env` (expect > 50).
+4. **Google Cloud.** Walk through `SETUP_GOOGLE.md`. Where people most often go wrong:
+   - Enable **Gmail API** specifically.
+   - **Add their own email under Test users** (otherwise `403 access_denied`).
+   - Click **Publish app** (otherwise the token dies after 7 days).
+   - The OAuth client type must be **Desktop app**.
+   - Put the downloaded `client_secret_….json` in the repo root as `credentials.json`:
+     `mv ~/Downloads/client_secret_*.json ./credentials.json` (make sure there is exactly one file and it has an `installed` key).
+5. **First run.** Prefer a test: set `BACKFILL_MONTHS=3` in `.env`. Open `Job Tracker.app` and click "Update table"
+   («Обновить таблицу (почта)»); the user signs in in the browser (the "not verified" warning → Advanced → Go to job-tracker).
+   Or from the terminal: `.venv/bin/python -m jobtracker.sync` (can take tens of minutes; run it in the background and watch the output).
+6. **Verify.** `token.json`, `data/jobs.db` and `job_search.xlsx` should exist. Look at the status distribution
+   (`sqlite3 data/jobs.db "select event,count(*) from emails where is_job=1 group by 1"`) and show it to the user.
+   If a company name is wrong or an email is not about hiring, fix the prompt in `jobtracker/classify.py`.
+7. **Schedule (optional).** Offer the cron lines from the README. Ask permission before editing `crontab` and keep a backup of the old one.
 
-## Типичные ошибки
-| Ошибка | Причина | Действие |
+## Common errors
+| Error | Cause | Action |
 |---|---|---|
-| `403 access_denied` | email не в Test users / приложение не опубликовано | Добавить в Audience → Test users, Publish app |
-| `invalid_grant: Token has been expired or revoked` | токен Testing (7 дней) | Publish app; `mv token.json data/`; войти заново |
-| `credentials.json` not found | не в корне / другое имя | Найти в Загрузках, переименовать |
-| `AuthenticationError` / 401 Anthropic | пустой или неверный ключ | Проверить `.env`, не печатая ключ |
-| `credit balance is too low` | нет баланса | Пополнить в console.anthropic.com → Billing |
-| `database is locked` | параллельные запуски | Дождаться окончания, перезапустить приложение |
+| `403 access_denied` | email not in Test users / app not published | Add under Audience → Test users, Publish app |
+| `invalid_grant: Token has been expired or revoked` | Testing-mode token (7 days) | Publish app; `mv token.json data/`; sign in again |
+| `credentials.json` not found | not in repo root / wrong name | Find it in Downloads and rename |
+| `AuthenticationError` / Anthropic 401 | empty or wrong key | Check `.env` without printing the key |
+| `credit balance is too low` | no credit | Add credit at console.anthropic.com → Billing |
+| `database is locked` | concurrent runs | Wait for the run to finish, restart the app |
 
-## Правила
-- Никогда не коммить и не публиковать: `.env`, `credentials.json`, `token.json`, `data/`, `job_search.xlsx`, резюме. Они в `.gitignore`.
-- Кнопка «Обновить рейтинг компаний» (`--rerate --force`) переоценивает все компании с веб-поиском: долго и платно. Предупреди перед запуском.
-- Почта только читается; не добавляй код, который отправляет, удаляет или помечает письма.
+## Rules
+- Never commit or publish: `.env`, `credentials.json`, `token.json`, `data/`, `job_search.xlsx`, résumés. They are in `.gitignore`.
+- The "Update company ratings" button («Обновить рейтинг компаний», `--rerate --force`) re-rates every company with web search:
+  slow and paid. Warn the user before running it.
+- Mail is read-only; never add code that sends, deletes or labels emails.
+- The UI and status names are in Russian; translate for the user if they do not read Russian.

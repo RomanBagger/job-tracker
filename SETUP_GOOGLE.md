@@ -1,49 +1,49 @@
-# Подключение Gmail через Google Cloud (один раз, ~10 минут)
+# Connect Gmail through Google Cloud (one time, ~10 minutes)
 
-Приложение читает почту через Gmail API с правом **только на чтение** (`gmail.readonly`): отправлять и удалять письма оно не может.
-Нужны два файла в папке проекта: `credentials.json` (доступ к Gmail) и `.env` (ключ Anthropic).
+The app reads mail through the Gmail API with **read-only** access (`gmail.readonly`): it cannot send, delete or modify anything.
+You need two files in the project folder: `credentials.json` (Gmail access) and `.env` (Anthropic key).
 
-## 1. Проект и Gmail API
-1. Откройте <https://console.cloud.google.com> и войдите в тот Google-аккаунт, чью почту будете читать.
-2. Вверху нажмите на выбор проекта → **New project** → имя `job-tracker` → **Create**. Убедитесь, что проект выбран.
-3. Меню **APIs & Services → Library** → найдите **Gmail API** → **Enable**.
+## 1. Project and Gmail API
+1. Open <https://console.cloud.google.com> and sign in with the Google account whose mail you want to read.
+2. Click the project picker at the top → **New project** → name it `job-tracker` → **Create**. Make sure it is selected.
+3. Menu **APIs & Services → Library** → find **Gmail API** → **Enable**.
 
-## 2. Экран согласия (OAuth consent screen)
-1. **APIs & Services → OAuth consent screen** (в новом интерфейсе: **Google Auth Platform**).
-2. Тип пользователей **External**, название `job-tracker`, ваш email в «User support» и «Developer contact» → Save.
-3. **Audience → Test users → Add users** → впишите **свой Gmail** → **Save**.
-   Без этого вход закончится ошибкой `403 access_denied` («приложение не прошло проверку Google»).
-4. Рекомендуется нажать **Publish app** (статус *In production*). Проверка Google для личного использования не нужна.
-   Пока статус *Testing*, токен живёт всего 7 дней и придётся заново входить раз в неделю.
+## 2. OAuth consent screen
+1. **APIs & Services → OAuth consent screen** (in the new UI: **Google Auth Platform**).
+2. User type **External**, app name `job-tracker`, your email as "User support" and "Developer contact" → Save.
+3. **Audience → Test users → Add users** → enter **your own Gmail** → **Save**.
+   Without this, sign-in fails with `403 access_denied` ("app has not completed Google verification").
+4. Click **Publish app** (status *In production*). Google verification is not needed for personal use.
+   While the status is *Testing*, the token lasts only 7 days and you will have to sign in again every week.
 
-## 3. Ключ OAuth
+## 3. OAuth client
 1. **APIs & Services → Credentials → Create credentials → OAuth client ID**.
-2. Тип приложения **Desktop app**, имя любое → **Create**.
-3. Нажмите **Download JSON** и сохраните файл как **`credentials.json`** в корне проекта (рядом с `run.sh`).
+2. Application type **Desktop app**, any name → **Create**.
+3. Click **Download JSON** and save it as **`credentials.json`** in the project root (next to `run.sh`).
 
-## 4. Ключ Anthropic
-1. <https://console.anthropic.com> → **Billing**: пополнить баланс ($5–10 хватит надолго).
-2. **Settings → API Keys → Create Key**, скопируйте ключ (`sk-ant-...`, показывается один раз).
-3. Скопируйте `.env.example` в `.env` и вставьте ключ:
+## 4. Anthropic key
+1. <https://console.anthropic.com> → **Billing**: add credit ($5–10 lasts a long time).
+2. **Settings → API Keys → Create Key**, copy the key (`sk-ant-...`, shown only once).
+3. Copy `.env.example` to `.env` and paste the key:
    ```
    ANTHROPIC_API_KEY=sk-ant-...
    BACKFILL_MONTHS=3
    ```
-   `BACKFILL_MONTHS` — за сколько месяцев читать почту при первом запуске (для пробы 3, для полной истории 24).
+   `BACKFILL_MONTHS` is how many months of mail to read on the first run (3 for a test, 24 for full history).
 
-## 5. Первый вход
-Откройте приложение **Job Tracker** и нажмите **«Обновить таблицу (почта)»**. Откроется браузер с окном Google:
-1. Выберите свой аккаунт.
-2. Если видите «Google hasn’t verified this app» — нажмите **Advanced → Go to job-tracker (unsafe)**. Это ваше собственное приложение, предупреждение нормально.
-3. Разрешите доступ на чтение почты.
+## 5. First sign-in
+Open the **Job Tracker** app and click **Update table** («Обновить таблицу (почта)»). A browser window from Google opens:
+1. Choose your account.
+2. If you see "Google hasn't verified this app", click **Advanced → Go to job-tracker (unsafe)**. It is your own app, so the warning is expected.
+3. Allow read access to your mail.
 
-После этого создаётся `token.json`, и вход больше не нужен.
+This creates `token.json`, and you will not need to sign in again.
 
-## Частые проблемы
-| Симптом | Что делать |
+## Troubleshooting
+| Symptom | What to do |
 |---|---|
-| `403 access_denied` при входе | Вашего email нет в **Test users** (шаг 2.3) или приложение не опубликовано. |
-| Снова просит войти через неделю | Приложение в статусе *Testing*: нажмите **Publish app** и удалите `token.json`. |
-| `credentials.json` not found | Файл лежит не в корне проекта или назван иначе (скачивается как `client_secret_…json`). |
-| `invalid_grant` / токен не обновляется | Удалите `token.json` и войдите заново. |
-| Ошибка Anthropic 401/credit | Проверьте ключ в `.env` и баланс в консоли Anthropic. |
+| `403 access_denied` at sign-in | Your email is not under **Test users** (step 2.3), or the app is not published. |
+| Asks you to sign in again after a week | The app is in *Testing*: click **Publish app** and delete `token.json`. |
+| `credentials.json` not found | The file is not in the project root or has another name (it downloads as `client_secret_…json`). |
+| `invalid_grant` / token will not refresh | Delete `token.json` and sign in again. |
+| Anthropic 401 / credit error | Check the key in `.env` and your balance in the Anthropic console. |
